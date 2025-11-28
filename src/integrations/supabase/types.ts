@@ -14,10 +14,131 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          total_quizzes_taken: number | null
+          total_score: number | null
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          total_quizzes_taken?: number | null
+          total_score?: number | null
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          total_quizzes_taken?: number | null
+          total_score?: number | null
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
+      quiz_attempts: {
+        Row: {
+          answered_questions: number | null
+          answers: Json | null
+          completed_at: string | null
+          correct_answers: number | null
+          created_at: string | null
+          id: string
+          max_score: number
+          percentage: number | null
+          quiz_id: string
+          quiz_title: string
+          score: number | null
+          started_at: string | null
+          subject_name: string | null
+          time_limit: number | null
+          time_taken: number | null
+          total_questions: number
+          user_id: string
+          wrong_answers: number | null
+        }
+        Insert: {
+          answered_questions?: number | null
+          answers?: Json | null
+          completed_at?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          id?: string
+          max_score: number
+          percentage?: number | null
+          quiz_id: string
+          quiz_title: string
+          score?: number | null
+          started_at?: string | null
+          subject_name?: string | null
+          time_limit?: number | null
+          time_taken?: number | null
+          total_questions: number
+          user_id: string
+          wrong_answers?: number | null
+        }
+        Update: {
+          answered_questions?: number | null
+          answers?: Json | null
+          completed_at?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          id?: string
+          max_score?: number
+          percentage?: number | null
+          quiz_id?: string
+          quiz_title?: string
+          score?: number | null
+          started_at?: string | null
+          subject_name?: string | null
+          time_limit?: number | null
+          time_taken?: number | null
+          total_questions?: number
+          user_id?: string
+          wrong_answers?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      leaderboard: {
+        Row: {
+          avatar_url: string | null
+          full_name: string | null
+          id: string | null
+          rank: number | null
+          total_quizzes_taken: number | null
+          total_score: number | null
+          username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
