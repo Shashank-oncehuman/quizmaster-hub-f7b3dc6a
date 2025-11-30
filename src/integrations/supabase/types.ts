@@ -14,241 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
-      achievements: {
-        Row: {
-          created_at: string
-          description: string
-          icon: string
-          id: string
-          points: number
-          requirement_type: string
-          requirement_value: number
-          title: string
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          icon: string
-          id?: string
-          points?: number
-          requirement_type: string
-          requirement_value: number
-          title: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          icon?: string
-          id?: string
-          points?: number
-          requirement_type?: string
-          requirement_value?: number
-          title?: string
-        }
-        Relationships: []
-      }
-      notifications: {
-        Row: {
-          created_at: string
-          id: string
-          message: string
-          read: boolean
-          title: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          message: string
-          read?: boolean
-          title: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          message?: string
-          read?: boolean
-          title?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null
-          created_at: string | null
+          current_streak: number | null
           full_name: string | null
           id: string
-          total_quizzes_taken: number | null
-          total_score: number | null
+          longest_streak: number | null
+          total_points: number | null
           updated_at: string | null
-          username: string
+          username: string | null
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
-          created_at?: string | null
+          current_streak?: number | null
           full_name?: string | null
           id: string
-          total_quizzes_taken?: number | null
-          total_score?: number | null
+          longest_streak?: number | null
+          total_points?: number | null
           updated_at?: string | null
-          username: string
+          username?: string | null
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
-          created_at?: string | null
+          current_streak?: number | null
           full_name?: string | null
           id?: string
-          total_quizzes_taken?: number | null
-          total_score?: number | null
+          longest_streak?: number | null
+          total_points?: number | null
           updated_at?: string | null
-          username?: string
+          username?: string | null
+          website?: string | null
         }
         Relationships: []
       }
       quiz_attempts: {
         Row: {
-          answered_questions: number | null
-          answers: Json | null
-          completed_at: string | null
-          correct_answers: number | null
-          created_at: string | null
+          accuracy: number | null
+          created_at: string
           id: string
-          max_score: number
-          percentage: number | null
           quiz_id: string
-          quiz_title: string
-          score: number | null
-          started_at: string | null
-          subject_name: string | null
-          time_limit: number | null
-          time_taken: number | null
-          total_questions: number
+          score: number
+          time_taken_seconds: number | null
+          total_marks: number
           user_id: string
-          wrong_answers: number | null
         }
         Insert: {
-          answered_questions?: number | null
-          answers?: Json | null
-          completed_at?: string | null
-          correct_answers?: number | null
-          created_at?: string | null
+          accuracy?: number | null
+          created_at?: string
           id?: string
-          max_score: number
-          percentage?: number | null
           quiz_id: string
-          quiz_title: string
-          score?: number | null
-          started_at?: string | null
-          subject_name?: string | null
-          time_limit?: number | null
-          time_taken?: number | null
-          total_questions: number
+          score: number
+          time_taken_seconds?: number | null
+          total_marks: number
           user_id: string
-          wrong_answers?: number | null
         }
         Update: {
-          answered_questions?: number | null
-          answers?: Json | null
-          completed_at?: string | null
-          correct_answers?: number | null
-          created_at?: string | null
+          accuracy?: number | null
+          created_at?: string
           id?: string
-          max_score?: number
-          percentage?: number | null
           quiz_id?: string
-          quiz_title?: string
-          score?: number | null
-          started_at?: string | null
-          subject_name?: string | null
-          time_limit?: number | null
-          time_taken?: number | null
-          total_questions?: number
+          score?: number
+          time_taken_seconds?: number | null
+          total_marks?: number
           user_id?: string
-          wrong_answers?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "quiz_attempts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "leaderboard"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quiz_attempts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      user_achievements: {
+      user_stats: {
         Row: {
-          achievement_id: string
           id: string
-          unlocked_at: string
+          last_active: string | null
+          overall_accuracy: number | null
+          subject_stats: Json | null
+          total_study_time_minutes: number | null
+          total_tests: number | null
+          updated_at: string | null
           user_id: string
+          weekly_activity: Json | null
         }
         Insert: {
-          achievement_id: string
           id?: string
-          unlocked_at?: string
+          last_active?: string | null
+          overall_accuracy?: number | null
+          subject_stats?: Json | null
+          total_study_time_minutes?: number | null
+          total_tests?: number | null
+          updated_at?: string | null
           user_id: string
+          weekly_activity?: Json | null
         }
         Update: {
-          achievement_id?: string
           id?: string
-          unlocked_at?: string
+          last_active?: string | null
+          overall_accuracy?: number | null
+          subject_stats?: Json | null
+          total_study_time_minutes?: number | null
+          total_tests?: number | null
+          updated_at?: string | null
           user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_achievements_achievement_id_fkey"
-            columns: ["achievement_id"]
-            isOneToOne: false
-            referencedRelation: "achievements"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_roles: {
-        Row: {
-          created_at: string | null
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
+          weekly_activity?: Json | null
         }
         Relationships: []
       }
     }
     Views: {
-      leaderboard: {
+      leaderboard_view: {
         Row: {
           avatar_url: string | null
           full_name: string | null
           id: string | null
+          overall_accuracy: number | null
           rank: number | null
-          total_quizzes_taken: number | null
-          total_score: number | null
-          username: string | null
+          total_points: number | null
+          total_tests: number | null
         }
         Relationships: []
       }
