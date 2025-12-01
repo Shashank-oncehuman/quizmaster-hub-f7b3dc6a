@@ -13,18 +13,19 @@ interface Profile {
   username: string;
   full_name: string;
   avatar_url: string;
-  total_quizzes_taken: number;
-  total_score: number;
+  total_points: number;
+  current_streak: number;
+  longest_streak: number;
 }
 
 interface QuizAttempt {
   id: string;
-  quiz_title: string;
+  quiz_id: string;
   score: number;
-  max_score: number;
-  percentage: number;
-  completed_at: string;
-  time_taken: number;
+  total_marks: number;
+  accuracy: number;
+  created_at: string;
+  time_taken_seconds: number;
 }
 
 const Profile = () => {
@@ -61,13 +62,13 @@ const Profile = () => {
 
       // Fetch user rank from leaderboard
       const { data: leaderboardData } = await supabase
-        .from("leaderboard")
+        .from("leaderboard_view")
         .select("rank")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (leaderboardData) {
-        setRank(leaderboardData.rank);
+        setRank(leaderboardData.rank || 0);
       }
     }
   };
@@ -83,8 +84,7 @@ const Profile = () => {
       .from("quiz_attempts")
       .select("*")
       .eq("user_id", session.user.id)
-      .not("completed_at", "is", null)
-      .order("completed_at", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching attempts:", error);
@@ -98,8 +98,10 @@ const Profile = () => {
   }
 
   const avgScore = attempts.length > 0
-    ? attempts.reduce((sum, a) => sum + a.percentage, 0) / attempts.length
+    ? attempts.reduce((sum, a) => sum + (a.accuracy || 0), 0) / attempts.length
     : 0;
+  
+  const totalQuizzes = attempts.length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -124,14 +126,14 @@ const Profile = () => {
                     <div className="flex items-center space-x-2 bg-primary/10 rounded-lg px-4 py-2">
                       <Trophy className="h-5 w-5 text-primary" />
                       <div>
-                        <div className="text-2xl font-bold">{profile.total_score}</div>
+                        <div className="text-2xl font-bold">{profile.total_points}</div>
                         <div className="text-xs text-muted-foreground">Total Points</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 bg-accent/10 rounded-lg px-4 py-2">
                       <Target className="h-5 w-5 text-accent" />
                       <div>
-                        <div className="text-2xl font-bold">{profile.total_quizzes_taken}</div>
+                        <div className="text-2xl font-bold">{totalQuizzes}</div>
                         <div className="text-xs text-muted-foreground">Quizzes Taken</div>
                       </div>
                     </div>
@@ -168,7 +170,7 @@ const Profile = () => {
                   <div className="grid grid-cols-2 gap-4 pt-4">
                     <div className="text-center p-4 bg-muted rounded-lg">
                       <div className="text-2xl font-bold text-primary">
-                        {attempts.filter((a) => a.percentage >= 75).length}
+                        {attempts.filter((a) => (a.accuracy || 0) >= 75).length}
                       </div>
                       <div className="text-xs text-muted-foreground">High Scores</div>
                     </div>
@@ -192,16 +194,16 @@ const Profile = () => {
                   {attempts.slice(0, 3).map((attempt) => (
                     <div key={attempt.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <div className="flex-1">
-                        <h4 className="font-medium text-sm">{attempt.quiz_title}</h4>
+                        <h4 className="font-medium text-sm">Quiz {attempt.quiz_id}</h4>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(attempt.completed_at).toLocaleDateString()}
+                          {new Date(attempt.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <Badge
-                        variant={attempt.percentage >= 75 ? "default" : "secondary"}
+                        variant={(attempt.accuracy || 0) >= 75 ? "default" : "secondary"}
                         className="ml-2"
                       >
-                        {attempt.percentage.toFixed(0)}%
+                        {(attempt.accuracy || 0).toFixed(0)}%
                       </Badge>
                     </div>
                   ))}
@@ -223,22 +225,22 @@ const Profile = () => {
                 {attempts.map((attempt) => (
                   <div key={attempt.id} className="p-4 bg-muted rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">{attempt.quiz_title}</h4>
-                      <Badge variant={attempt.percentage >= 75 ? "default" : "secondary"}>
-                        {attempt.score}/{attempt.max_score}
+                      <h4 className="font-semibold">Quiz {attempt.quiz_id}</h4>
+                      <Badge variant={(attempt.accuracy || 0) >= 75 ? "default" : "secondary"}>
+                        {attempt.score}/{attempt.total_marks}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div className="flex items-center text-muted-foreground">
                         <Target className="h-4 w-4 mr-1" />
-                        {attempt.percentage.toFixed(1)}%
+                        {(attempt.accuracy || 0).toFixed(1)}%
                       </div>
                       <div className="flex items-center text-muted-foreground">
                         <Clock className="h-4 w-4 mr-1" />
-                        {Math.floor(attempt.time_taken / 60)}m {attempt.time_taken % 60}s
+                        {Math.floor((attempt.time_taken_seconds || 0) / 60)}m {(attempt.time_taken_seconds || 0) % 60}s
                       </div>
                       <div className="text-muted-foreground text-right">
-                        {new Date(attempt.completed_at).toLocaleDateString()}
+                        {new Date(attempt.created_at).toLocaleDateString()}
                       </div>
                     </div>
                   </div>

@@ -71,7 +71,7 @@ const Analytics = () => {
 
     // Calculate average score
     const avgScore = attempts?.length 
-      ? attempts.reduce((sum, a) => sum + (a.percentage || 0), 0) / attempts.length 
+      ? attempts.reduce((sum, a) => sum + (a.accuracy || 0), 0) / attempts.length 
       : 0;
 
     // Fetch recent activity
@@ -358,17 +358,17 @@ const Analytics = () => {
                           </div>
                           <div>
                             <p className="font-medium">{activity.quiz_title}</p>
-                            <p className="text-sm text-muted-foreground">
-                              by {activity.profiles?.username || "User"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-primary">{activity.percentage}%</p>
-                          <p className="text-xs text-muted-foreground">
-                            {activity.correct_answers}/{activity.total_questions} correct
+                          <p className="text-sm text-muted-foreground">
+                            by {activity.profiles?.username || "User"}
                           </p>
                         </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-primary">{activity.accuracy?.toFixed(1)}%</p>
+                        <p className="text-xs text-muted-foreground">
+                          {activity.score}/{activity.total_marks} points
+                        </p>
+                      </div>
                       </div>
                     ))
                   ) : (

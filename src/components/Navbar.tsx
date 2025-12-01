@@ -74,7 +74,7 @@ const Navbar = () => {
           <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-smooth">
             <GraduationCap className="h-6 w-6 text-primary" />
           </div>
-          <span className="text-xl font-bold">QuizMaster</span>
+          <span className="text-xl font-bold">Study Ocean</span>
         </Link>
 
         <div className="flex items-center space-x-4">
