@@ -84,17 +84,16 @@ const Quiz = () => {
     setQuestions(mockQuestions);
 
     // Create quiz attempt record
-    const { data, error } = await supabase
+    const { data, error} = await supabase
       .from("quiz_attempts")
-      .insert({
+      .insert([{
         user_id: userId,
         quiz_id: testId!,
-        quiz_title: "Sample Quiz",
-        subject_name: "Mathematics",
-        total_questions: mockQuestions.length,
-        max_score: mockQuestions.length,
-        time_limit: 1800,
-      })
+        score: 0,
+        total_marks: mockQuestions.length,
+        accuracy: 0,
+        time_taken_seconds: 0
+      }])
       .select()
       .single();
 

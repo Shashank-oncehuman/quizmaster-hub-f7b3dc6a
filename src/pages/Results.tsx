@@ -9,16 +9,12 @@ import { Trophy, Target, Clock, CheckCircle, XCircle, Award } from "lucide-react
 import Navbar from "@/components/Navbar";
 
 interface QuizResult {
-  quiz_title: string;
-  total_questions: number;
-  answered_questions: number;
-  correct_answers: number;
-  wrong_answers: number;
+  quiz_id: string;
   score: number;
-  max_score: number;
-  percentage: number;
-  time_taken: number;
-  completed_at: string;
+  total_marks: number;
+  accuracy: number;
+  time_taken_seconds: number;
+  created_at: string;
 }
 
 const Results = () => {
@@ -65,7 +61,9 @@ const Results = () => {
     return { text: "Need Improvement", color: "text-destructive" };
   };
 
-  const performance = getPerformanceMessage(result.percentage);
+  const performance = getPerformanceMessage(result.accuracy || 0);
+  const correctAnswers = Math.round(((result.accuracy || 0) / 100) * result.total_marks);
+  const wrongAnswers = result.total_marks - correctAnswers;
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,7 +77,7 @@ const Results = () => {
               <Trophy className="h-12 w-12 text-primary" />
             </div>
             <h1 className="text-4xl font-bold mb-2">Quiz Completed!</h1>
-            <p className="text-xl text-muted-foreground">{result.quiz_title}</p>
+            <p className="text-xl text-muted-foreground">Quiz {result.quiz_id}</p>
           </div>
 
           {/* Score Card */}
@@ -88,7 +86,7 @@ const Results = () => {
               <CardTitle className="text-3xl mb-2">Your Score</CardTitle>
               <div className="flex items-center justify-center space-x-2">
                 <span className="text-6xl font-bold text-primary">{result.score}</span>
-                <span className="text-3xl text-muted-foreground">/ {result.max_score}</span>
+                <span className="text-3xl text-muted-foreground">/ {result.total_marks}</span>
               </div>
               <div className={`text-2xl font-semibold mt-2 ${performance.color}`}>
                 {performance.text}
@@ -98,26 +96,26 @@ const Results = () => {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium">Percentage</span>
-                    <span className="text-sm font-bold">{result.percentage.toFixed(1)}%</span>
+                    <span className="text-sm font-medium">Accuracy</span>
+                    <span className="text-sm font-bold">{(result.accuracy || 0).toFixed(1)}%</span>
                   </div>
-                  <Progress value={result.percentage} className="h-3" />
+                  <Progress value={result.accuracy || 0} className="h-3" />
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
                   <div className="text-center p-4 bg-success/10 rounded-lg">
                     <CheckCircle className="h-6 w-6 text-success mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-success">{result.correct_answers}</div>
+                    <div className="text-2xl font-bold text-success">{correctAnswers}</div>
                     <div className="text-xs text-muted-foreground">Correct</div>
                   </div>
                   <div className="text-center p-4 bg-destructive/10 rounded-lg">
                     <XCircle className="h-6 w-6 text-destructive mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-destructive">{result.wrong_answers}</div>
+                    <div className="text-2xl font-bold text-destructive">{wrongAnswers}</div>
                     <div className="text-xs text-muted-foreground">Wrong</div>
                   </div>
                   <div className="text-center p-4 bg-primary/10 rounded-lg">
                     <Clock className="h-6 w-6 text-primary mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-primary">{formatTime(result.time_taken)}</div>
+                    <div className="text-2xl font-bold text-primary">{formatTime(result.time_taken_seconds || 0)}</div>
                     <div className="text-xs text-muted-foreground">Time Taken</div>
                   </div>
                   <div className="text-center p-4 bg-accent/10 rounded-lg">
@@ -138,23 +136,23 @@ const Results = () => {
             <CardContent>
               <div className="grid gap-4">
                 <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                  <span className="text-sm font-medium">Total Questions</span>
-                  <Badge variant="secondary">{result.total_questions}</Badge>
+                  <span className="text-sm font-medium">Total Marks</span>
+                  <Badge variant="secondary">{result.total_marks}</Badge>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                  <span className="text-sm font-medium">Questions Attempted</span>
-                  <Badge variant="secondary">{result.answered_questions}</Badge>
+                  <span className="text-sm font-medium">Score Achieved</span>
+                  <Badge variant="secondary">{result.score}</Badge>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                   <span className="text-sm font-medium">Accuracy</span>
                   <Badge variant="secondary">
-                    {((result.correct_answers / result.answered_questions) * 100).toFixed(1)}%
+                    {(result.accuracy || 0).toFixed(1)}%
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                   <span className="text-sm font-medium">Completed At</span>
                   <span className="text-sm text-muted-foreground">
-                    {new Date(result.completed_at).toLocaleString()}
+                    {new Date(result.created_at).toLocaleString()}
                   </span>
                 </div>
               </div>

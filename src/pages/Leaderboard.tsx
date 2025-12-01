@@ -8,12 +8,12 @@ import Navbar from "@/components/Navbar";
 
 interface LeaderboardEntry {
   id: string;
-  username: string;
   full_name: string;
   avatar_url: string;
-  total_quizzes_taken: number;
-  total_score: number;
+  total_tests: number;
+  total_points: number;
   rank: number;
+  overall_accuracy: number;
 }
 
 const Leaderboard = () => {
@@ -30,7 +30,7 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     const { data, error } = await supabase
-      .from("leaderboard")
+      .from("leaderboard_view")
       .select("*")
       .limit(50);
 
@@ -84,13 +84,13 @@ const Leaderboard = () => {
                   </div>
                   <Avatar className="h-20 w-20 mx-auto mb-3 border-4 border-gray-300">
                     <AvatarImage src={leaderboard[1].avatar_url} />
-                    <AvatarFallback className="bg-gray-200 text-gray-700 text-xl">
-                      {leaderboard[1].username[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <h3 className="font-bold text-lg">{leaderboard[1].username}</h3>
-                  <p className="text-3xl font-bold text-gray-600 mt-2">{leaderboard[1].total_score}</p>
-                  <p className="text-sm text-muted-foreground">{leaderboard[1].total_quizzes_taken} quizzes</p>
+              <AvatarFallback className="bg-gray-200 text-gray-700 text-xl">
+                {leaderboard[1].full_name?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <h3 className="font-bold text-lg">{leaderboard[1].full_name}</h3>
+            <p className="text-3xl font-bold text-gray-600 mt-2">{leaderboard[1].total_points}</p>
+            <p className="text-sm text-muted-foreground">{leaderboard[1].total_tests} quizzes</p>
                 </CardContent>
               </Card>
 
@@ -102,13 +102,13 @@ const Leaderboard = () => {
                   </div>
                   <Avatar className="h-24 w-24 mx-auto mb-3 border-4 border-yellow-400">
                     <AvatarImage src={leaderboard[0].avatar_url} />
-                    <AvatarFallback className="bg-yellow-200 text-yellow-800 text-2xl">
-                      {leaderboard[0].username[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <h3 className="font-bold text-xl">{leaderboard[0].username}</h3>
-                  <p className="text-4xl font-bold text-yellow-600 mt-2">{leaderboard[0].total_score}</p>
-                  <p className="text-sm text-muted-foreground">{leaderboard[0].total_quizzes_taken} quizzes</p>
+              <AvatarFallback className="bg-yellow-200 text-yellow-800 text-2xl">
+                {leaderboard[0].full_name?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <h3 className="font-bold text-xl">{leaderboard[0].full_name}</h3>
+            <p className="text-4xl font-bold text-yellow-600 mt-2">{leaderboard[0].total_points}</p>
+            <p className="text-sm text-muted-foreground">{leaderboard[0].total_tests} quizzes</p>
                 </CardContent>
               </Card>
 
@@ -120,13 +120,13 @@ const Leaderboard = () => {
                   </div>
                   <Avatar className="h-20 w-20 mx-auto mb-3 border-4 border-orange-300">
                     <AvatarImage src={leaderboard[2].avatar_url} />
-                    <AvatarFallback className="bg-orange-200 text-orange-700 text-xl">
-                      {leaderboard[2].username[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <h3 className="font-bold text-lg">{leaderboard[2].username}</h3>
-                  <p className="text-3xl font-bold text-orange-600 mt-2">{leaderboard[2].total_score}</p>
-                  <p className="text-sm text-muted-foreground">{leaderboard[2].total_quizzes_taken} quizzes</p>
+              <AvatarFallback className="bg-orange-200 text-orange-700 text-xl">
+                {leaderboard[2].full_name?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <h3 className="font-bold text-lg">{leaderboard[2].full_name}</h3>
+            <p className="text-3xl font-bold text-orange-600 mt-2">{leaderboard[2].total_points}</p>
+            <p className="text-sm text-muted-foreground">{leaderboard[2].total_tests} quizzes</p>
                 </CardContent>
               </Card>
             </div>
@@ -154,28 +154,28 @@ const Leaderboard = () => {
                           <span className="text-lg font-bold">{entry.rank}</span>
                         )}
                       </div>
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={entry.avatar_url} />
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {entry.username[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold">{entry.username}</h3>
-                          {entry.id === currentUserId && (
-                            <Badge variant="secondary" className="text-xs">You</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {entry.total_quizzes_taken} quizzes completed
-                        </p>
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={entry.avatar_url} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {entry.full_name?.[0]?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="font-semibold">{entry.full_name || "User"}</h3>
+                        {entry.id === currentUserId && (
+                          <Badge variant="secondary" className="text-xs">You</Badge>
+                        )}
                       </div>
+                      <p className="text-sm text-muted-foreground">
+                        {entry.total_tests} quizzes completed
+                      </p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-primary">{entry.total_score}</div>
-                      <p className="text-xs text-muted-foreground">points</p>
-                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-primary">{entry.total_points}</div>
+                    <p className="text-xs text-muted-foreground">points</p>
+                  </div>
                   </div>
                 ))}
               </div>
