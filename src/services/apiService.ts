@@ -66,7 +66,8 @@ class ApiService {
   async fetchTestSeries(apiUrl: string): Promise<TestSeries[]> {
     try {
       const url = `${this.baseUrl}?bash_url=${encodeURIComponent(apiUrl)}&action=series`;
-      return await proxyFetch(url);
+      const response = await proxyFetch(url);
+      return Array.isArray(response) ? response : (response?.data || []);
     } catch (error) {
       console.error("Error fetching test series:", error);
       return [];
@@ -76,7 +77,8 @@ class ApiService {
   async fetchSubjects(apiUrl: string, testId: string): Promise<Subject[]> {
     try {
       const url = `${this.baseUrl}?bash_url=${encodeURIComponent(apiUrl)}&action=subjects&test_id=${testId}`;
-      return await proxyFetch(url);
+      const response = await proxyFetch(url);
+      return Array.isArray(response) ? response : (response?.data || []);
     } catch (error) {
       console.error("Error fetching subjects:", error);
       return [];
@@ -86,7 +88,8 @@ class ApiService {
   async fetchTestTitles(apiUrl: string, testId: string, subjectId: string): Promise<TestTitle[]> {
     try {
       const url = `${this.baseUrl}?bash_url=${encodeURIComponent(apiUrl)}&action=titles&test_id=${testId}&subject_id=${subjectId}`;
-      return await proxyFetch(url);
+      const response = await proxyFetch(url);
+      return Array.isArray(response) ? response : (response?.data || []);
     } catch (error) {
       console.error("Error fetching test titles:", error);
       return [];

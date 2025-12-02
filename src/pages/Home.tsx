@@ -144,8 +144,8 @@ const Home = () => {
               <SelectValue placeholder="Choose an institution..." />
             </SelectTrigger>
             <SelectContent>
-              {providers.map((provider) => (
-                <SelectItem key={provider.api} value={provider.api}>
+              {providers.map((provider, index) => (
+                <SelectItem key={`${provider.api}-${index}`} value={provider.api}>
                   {provider.name}
                 </SelectItem>
               ))}
