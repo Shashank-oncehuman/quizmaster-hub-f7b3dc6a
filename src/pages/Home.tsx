@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BookOpen, Users, Award, Search, AlertCircle } from "lucide-react";
-import { useApiProviders, useTestSeries } from "@/hooks/useApiData";
+import { useApiProviders, useAllTestSeries } from "@/hooks/useApiData";
 import { TestSeriesSkeleton } from "@/components/TestSeriesSkeleton";
 import { ApiErrorState, EmptyState } from "@/components/ApiErrorState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -22,13 +22,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const Home = () => {
   const [user, setUser] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [priceFilter, setPriceFilter] = useState<"all" | "free" | "paid">("all");
   const [sortBy, setSortBy] = useState<"popularity" | "price_low" | "price_high" | "tests">("popularity");
   const navigate = useNavigate();
 
   const { providers, loading: providersLoading, error: providersError, refetch: refetchProviders } = useApiProviders();
-  const { testSeries, loading: seriesLoading, error: seriesError, refetch: refetchSeries } = useTestSeries(selectedProvider);
+  const { testSeries, loading: seriesLoading, error: seriesError, refetch: refetchSeries } = useAllTestSeries(providers);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -52,19 +51,6 @@ const Home = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Set default provider when providers load
-  useEffect(() => {
-    if (providers.length > 0 && !selectedProvider) {
-      setSelectedProvider(providers[0].api);
-    }
-  }, [providers, selectedProvider]);
-
-  // Save selected API URL for TestSeries page
-  useEffect(() => {
-    if (selectedProvider) {
-      localStorage.setItem("selectedApiUrl", selectedProvider);
-    }
-  }, [selectedProvider]);
 
   // Filter and sort test series
   const filteredTestSeries = (testSeries || [])
@@ -135,33 +121,14 @@ const Home = () => {
       </section>
 
       <main className="container mx-auto px-4 py-12">
-        {/* Institution Selector */}
-        <div className="mb-8">
-          <label className="text-sm font-medium mb-2 block">Select Institution</label>
-          <Select
-            value={selectedProvider || undefined}
-            onValueChange={setSelectedProvider}
-            disabled={providersLoading}
-          >
-            <SelectTrigger className="w-full md:w-96">
-              <SelectValue placeholder="Choose an institution..." />
-            </SelectTrigger>
-            <SelectContent>
-              {providers.map((provider, index) => (
-                <SelectItem key={`${provider.api}-${index}`} value={provider.api}>
-                  {provider.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Test Series Section */}
         <section className="mb-12">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
               <h2 className="text-3xl font-bold mb-2">Available Test Series</h2>
-              <p className="text-muted-foreground">Browse and start your learning journey</p>
+              <p className="text-muted-foreground">
+                {providersLoading ? "Loading institutions..." : `Browse ${providers.length} institutions`}
+              </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
               <div className="relative flex-1 md:w-64">
@@ -213,25 +180,30 @@ const Home = () => {
             />
           )}
 
-          {!seriesLoading && !seriesError && testSeries.length === 0 && selectedProvider && (
+          {!seriesLoading && !seriesError && testSeries.length === 0 && providers.length > 0 && (
             <Alert className="mb-6">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>No test series available</AlertTitle>
               <AlertDescription>
-                This institution may require authentication or has no public test series. Try selecting a different institution from the dropdown above.
+                No public test series found. Some institutions may require authentication.
               </AlertDescription>
             </Alert>
           )}
 
-          {seriesLoading ? (
+          {(seriesLoading || providersLoading) ? (
             <TestSeriesSkeleton />
           ) : filteredTestSeries.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTestSeries.map((series, index) => (
                 <Card
-                  key={`${series.id}-${index}`}
+                  key={`${series.id}-${series.providerApi}-${index}`}
                   className="hover:shadow-lg transition-smooth cursor-pointer group"
-                  onClick={() => navigate(`/test-series/${series.id}`)}
+                  onClick={() => {
+                    if (series.providerApi) {
+                      localStorage.setItem("selectedApiUrl", series.providerApi);
+                    }
+                    navigate(`/test-series/${series.id}`);
+                  }}
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between mb-3">
@@ -250,6 +222,7 @@ const Home = () => {
                       {series.name}
                     </CardTitle>
                     <CardDescription>
+                      {series.providerName && <span className="text-primary">{series.providerName} • </span>}
                       {series.total_tests} tests {series.expiresOn && `• ${series.expiresOn}`}
                     </CardDescription>
                   </CardHeader>
@@ -262,7 +235,7 @@ const Home = () => {
               ))}
             </div>
           ) : !seriesLoading && !seriesError ? (
-            <EmptyState message="No test series found. Try selecting a different institution or adjusting your filters." />
+            <EmptyState message="No test series found matching your filters." />
           ) : null}
         </section>
       </main>
