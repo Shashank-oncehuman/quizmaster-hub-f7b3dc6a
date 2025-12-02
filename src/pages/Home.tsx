@@ -13,8 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BookOpen, Users, Award, Search, Loader2 } from "lucide-react";
+import { BookOpen, Users, Award, Search, AlertCircle } from "lucide-react";
 import { useApiProviders, useTestSeries } from "@/hooks/useApiData";
+import { TestSeriesSkeleton } from "@/components/TestSeriesSkeleton";
+import { ApiErrorState, EmptyState } from "@/components/ApiErrorState";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Home = () => {
   const [user, setUser] = useState<any>(null);
@@ -24,8 +27,8 @@ const Home = () => {
   const [sortBy, setSortBy] = useState<"popularity" | "price_low" | "price_high" | "tests">("popularity");
   const navigate = useNavigate();
 
-  const { providers, loading: providersLoading } = useApiProviders();
-  const { testSeries, loading: seriesLoading } = useTestSeries(selectedProvider);
+  const { providers, loading: providersLoading, error: providersError, refetch: refetchProviders } = useApiProviders();
+  const { testSeries, loading: seriesLoading, error: seriesError, refetch: refetchSeries } = useTestSeries(selectedProvider);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -64,9 +67,9 @@ const Home = () => {
   }, [selectedProvider]);
 
   // Filter and sort test series
-  const filteredTestSeries = testSeries
+  const filteredTestSeries = (testSeries || [])
     .filter((series) => {
-      const matchesSearch = series.series_name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = series.name?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesPrice =
         priceFilter === "all" ||
         (priceFilter === "free" && !series.is_paid) ||
@@ -80,7 +83,7 @@ const Home = () => {
         case "price_high":
           return (b.price || 0) - (a.price || 0);
         case "tests":
-          return b.total_tests - a.total_tests;
+          return (b.total_tests || 0) - (a.total_tests || 0);
         default:
           return 0;
       }
@@ -194,25 +197,48 @@ const Home = () => {
             </div>
           </div>
 
+          {providersError && (
+            <ApiErrorState 
+              title="Failed to load institutions" 
+              message={providersError}
+              onRetry={refetchProviders}
+            />
+          )}
+
+          {seriesError && !seriesLoading && (
+            <ApiErrorState 
+              title="Failed to load test series" 
+              message={seriesError}
+              onRetry={refetchSeries}
+            />
+          )}
+
+          {!seriesLoading && !seriesError && testSeries.length === 0 && selectedProvider && (
+            <Alert className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>No test series available</AlertTitle>
+              <AlertDescription>
+                This institution may require authentication or has no public test series. Try selecting a different institution from the dropdown above.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {seriesLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-2 text-muted-foreground">Loading test series...</span>
-            </div>
+            <TestSeriesSkeleton />
           ) : filteredTestSeries.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredTestSeries.map((series) => (
+              {filteredTestSeries.map((series, index) => (
                 <Card
-                  key={series.test_id}
+                  key={`${series.id}-${index}`}
                   className="hover:shadow-lg transition-smooth cursor-pointer group"
-                  onClick={() => navigate(`/test-series/${series.test_id}`)}
+                  onClick={() => navigate(`/test-series/${series.id}`)}
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between mb-3">
-                      {series.series_logo && (
+                      {series.logo && (
                         <img
-                          src={series.series_logo}
-                          alt={series.series_name}
+                          src={series.logo}
+                          alt={series.name}
                           className="h-12 w-12 object-contain rounded"
                         />
                       )}
@@ -221,10 +247,10 @@ const Home = () => {
                       </Badge>
                     </div>
                     <CardTitle className="group-hover:text-primary transition-smooth">
-                      {series.series_name}
+                      {series.name}
                     </CardTitle>
                     <CardDescription>
-                      {series.total_tests} tests • {series.validity_days} days validity
+                      {series.total_tests} tests {series.expiresOn && `• ${series.expiresOn}`}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -235,11 +261,9 @@ const Home = () => {
                 </Card>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No test series found. Try a different search or filter.</p>
-            </div>
-          )}
+          ) : !seriesLoading && !seriesError ? (
+            <EmptyState message="No test series found. Try selecting a different institution or adjusting your filters." />
+          ) : null}
         </section>
       </main>
     </div>

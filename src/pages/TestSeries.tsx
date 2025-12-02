@@ -5,8 +5,10 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, FileQuestion, Award, ChevronLeft, Loader2 } from "lucide-react";
+import { Clock, FileQuestion, Award, ChevronLeft } from "lucide-react";
 import { useSubjects, useTestTitles } from "@/hooks/useApiData";
+import { SubjectSkeleton, TestSeriesSkeleton } from "@/components/TestSeriesSkeleton";
+import { ApiErrorState, EmptyState } from "@/components/ApiErrorState";
 
 const TestSeries = () => {
   const { seriesId } = useParams();
@@ -16,10 +18,10 @@ const TestSeries = () => {
   const [apiUrl, setApiUrl] = useState<string | null>(null);
 
   // Get subjects for this test series
-  const { subjects, loading: subjectsLoading } = useSubjects(apiUrl, seriesId || null);
+  const { subjects, loading: subjectsLoading, error: subjectsError, refetch: refetchSubjects } = useSubjects(apiUrl, seriesId || null);
   
   // Get test titles for selected subject
-  const { testTitles, loading: titlesLoading } = useTestTitles(
+  const { testTitles, loading: titlesLoading, error: titlesError, refetch: refetchTitles } = useTestTitles(
     apiUrl,
     seriesId || null,
     selectedSubject
@@ -70,32 +72,38 @@ const TestSeries = () => {
         {!selectedSubject && (
           <div>
             <h2 className="text-2xl font-semibold mb-4">Select Subject</h2>
+            
+            {subjectsError && (
+              <ApiErrorState 
+                title="Failed to load subjects" 
+                message={subjectsError}
+                onRetry={refetchSubjects}
+              />
+            )}
+
             {subjectsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2 text-muted-foreground">Loading subjects...</span>
-              </div>
+              <SubjectSkeleton />
             ) : subjects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {subjects.map((subject) => (
+                {subjects.map((subject, index) => (
                   <Card
-                    key={subject.subject_id}
+                    key={`${subject.id}-${index}`}
                     className="hover:shadow-lg transition-smooth cursor-pointer group"
-                    onClick={() => setSelectedSubject(subject.subject_id)}
+                    onClick={() => setSelectedSubject(subject.id)}
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between mb-3">
-                        {subject.subject_logo && (
+                        {subject.logo && (
                           <img
-                            src={subject.subject_logo}
-                            alt={subject.subject_name}
+                            src={subject.logo}
+                            alt={subject.name}
                             className="h-12 w-12 object-contain rounded"
                           />
                         )}
                         <Badge variant="secondary">{subject.total_tests} tests</Badge>
                       </div>
                       <CardTitle className="group-hover:text-primary transition-smooth">
-                        {subject.subject_name}
+                        {subject.name}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -106,11 +114,9 @@ const TestSeries = () => {
                   </Card>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No subjects available for this test series.</p>
-              </div>
-            )}
+            ) : !subjectsLoading && !subjectsError ? (
+              <EmptyState message="No subjects available for this test series." />
+            ) : null}
           </div>
         )}
 
@@ -127,56 +133,59 @@ const TestSeries = () => {
             </Button>
 
             <h2 className="text-2xl font-semibold mb-4">Available Tests</h2>
+            
+            {titlesError && (
+              <ApiErrorState 
+                title="Failed to load tests" 
+                message={titlesError}
+                onRetry={refetchTitles}
+              />
+            )}
+
             {titlesLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2 text-muted-foreground">Loading tests...</span>
-              </div>
+              <TestSeriesSkeleton />
             ) : testTitles.length > 0 ? (
               <div className="grid gap-4">
-                {testTitles.map((test) => (
-                  <Card key={test.title_id} className="hover:shadow-lg transition-smooth">
+                {testTitles.map((test, index) => (
+                  <Card key={`${test.id}-${index}`} className="hover:shadow-lg transition-smooth">
                     <CardContent className="p-6">
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div className="flex-1">
-                          <h3 className="text-xl font-semibold mb-2">{test.title_name}</h3>
+                          <h3 className="text-xl font-semibold mb-2">{test.name}</h3>
                           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center">
                               <Clock className="h-4 w-4 mr-1" />
-                              {test.duration_minutes} mins
+                              {test.duration} mins
                             </div>
                             <div className="flex items-center">
                               <FileQuestion className="h-4 w-4 mr-1" />
-                              {test.total_questions} questions
+                              {test.totalQuestions} questions
                             </div>
                             <div className="flex items-center">
                               <Award className="h-4 w-4 mr-1" />
-                              {test.total_marks} marks
+                              {test.totalMarks} marks
                             </div>
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 w-full md:w-auto">
                           <div className="flex gap-2">
-                            {test.is_completed && (
-                              <Badge variant="default" className="bg-success">
-                                Completed
+                            {test.isPremium && (
+                              <Badge variant="default">
+                                Premium
                               </Badge>
                             )}
-                            {!test.is_completed && test.remaining_attempts > 0 && (
+                            {test.attemptCount !== undefined && test.attemptCount > 0 && (
                               <Badge variant="secondary">
-                                {test.remaining_attempts} attempts left
+                                {test.attemptCount} attempts
                               </Badge>
-                            )}
-                            {test.remaining_attempts === 0 && !test.is_completed && (
-                              <Badge variant="destructive">No attempts left</Badge>
                             )}
                           </div>
                           <Button
-                            onClick={() => handleStartTest(test.questions_json_url, test.title_id)}
-                            disabled={test.remaining_attempts === 0 && !test.is_completed}
+                            onClick={() => handleStartTest(test.questionsUrl, test.id)}
+                            disabled={!test.questionsUrl}
                             className="w-full md:w-auto"
                           >
-                            {test.is_completed ? "Retake Test" : "Start Test"}
+                            Start Test
                           </Button>
                         </div>
                       </div>
@@ -184,11 +193,9 @@ const TestSeries = () => {
                   </Card>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No tests available for this subject.</p>
-              </div>
-            )}
+            ) : !titlesLoading && !titlesError ? (
+              <EmptyState message="No tests available for this subject." />
+            ) : null}
           </div>
         )}
       </main>

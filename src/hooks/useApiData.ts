@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiService, ApiProvider, TestSeries, Subject, TestTitle } from "@/services/apiService";
 
 export const useApiProviders = () => {
@@ -6,23 +6,25 @@ export const useApiProviders = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchProviders = async () => {
-      try {
-        const data = await apiService.fetchApiProviders();
-        setProviders(data);
-      } catch (err) {
-        setError("Failed to load API providers");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProviders();
+  const fetchProviders = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiService.fetchApiProviders();
+      setProviders(data);
+    } catch (err) {
+      setError("Failed to load API providers");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return { providers, loading, error };
+  useEffect(() => {
+    fetchProviders();
+  }, [fetchProviders]);
+
+  return { providers, loading, error, refetch: fetchProviders };
 };
 
 export const useTestSeries = (apiUrl: string | null) => {
@@ -30,26 +32,29 @@ export const useTestSeries = (apiUrl: string | null) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchSeries = useCallback(async () => {
     if (!apiUrl) return;
-
-    const fetchSeries = async () => {
-      setLoading(true);
-      try {
-        const data = await apiService.fetchTestSeries(apiUrl);
-        setTestSeries(data);
-      } catch (err) {
-        setError("Failed to load test series");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSeries();
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiService.fetchTestSeries(apiUrl);
+      setTestSeries(data);
+    } catch (err) {
+      setError("Failed to load test series");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, [apiUrl]);
 
-  return { testSeries, loading, error };
+  useEffect(() => {
+    if (apiUrl) {
+      fetchSeries();
+    }
+  }, [apiUrl, fetchSeries]);
+
+  return { testSeries, loading, error, refetch: fetchSeries };
 };
 
 export const useSubjects = (apiUrl: string | null, testId: string | null) => {
@@ -57,26 +62,29 @@ export const useSubjects = (apiUrl: string | null, testId: string | null) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchSubjects = useCallback(async () => {
     if (!apiUrl || !testId) return;
 
-    const fetchSubjects = async () => {
-      setLoading(true);
-      try {
-        const data = await apiService.fetchSubjects(apiUrl, testId);
-        setSubjects(data);
-      } catch (err) {
-        setError("Failed to load subjects");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSubjects();
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiService.fetchSubjects(apiUrl, testId);
+      setSubjects(data);
+    } catch (err) {
+      setError("Failed to load subjects");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, [apiUrl, testId]);
 
-  return { subjects, loading, error };
+  useEffect(() => {
+    if (apiUrl && testId) {
+      fetchSubjects();
+    }
+  }, [apiUrl, testId, fetchSubjects]);
+
+  return { subjects, loading, error, refetch: fetchSubjects };
 };
 
 export const useTestTitles = (
@@ -88,24 +96,27 @@ export const useTestTitles = (
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchTitles = useCallback(async () => {
     if (!apiUrl || !testId || !subjectId) return;
 
-    const fetchTitles = async () => {
-      setLoading(true);
-      try {
-        const data = await apiService.fetchTestTitles(apiUrl, testId, subjectId);
-        setTestTitles(data);
-      } catch (err) {
-        setError("Failed to load test titles");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTitles();
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiService.fetchTestTitles(apiUrl, testId, subjectId);
+      setTestTitles(data);
+    } catch (err) {
+      setError("Failed to load test titles");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, [apiUrl, testId, subjectId]);
 
-  return { testTitles, loading, error };
+  useEffect(() => {
+    if (apiUrl && testId && subjectId) {
+      fetchTitles();
+    }
+  }, [apiUrl, testId, subjectId, fetchTitles]);
+
+  return { testTitles, loading, error, refetch: fetchTitles };
 };
