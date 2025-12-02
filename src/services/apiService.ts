@@ -16,6 +16,8 @@ export interface TestSeries {
   total_tests: number;
   expiresOn?: string;
   price?: number;
+  providerName?: string;
+  providerApi?: string;
 }
 
 export interface Subject {

@@ -27,34 +27,53 @@ export const useApiProviders = () => {
   return { providers, loading, error, refetch: fetchProviders };
 };
 
-export const useTestSeries = (apiUrl: string | null) => {
+export const useAllTestSeries = (providers: ApiProvider[]) => {
   const [testSeries, setTestSeries] = useState<TestSeries[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSeries = useCallback(async () => {
-    if (!apiUrl) return;
+  const fetchAllSeries = useCallback(async () => {
+    if (providers.length === 0) return;
     
     setLoading(true);
     setError(null);
     try {
-      const data = await apiService.fetchTestSeries(apiUrl);
-      setTestSeries(data);
+      // Fetch from all providers in parallel
+      const results = await Promise.allSettled(
+        providers.map(provider => apiService.fetchTestSeries(provider.api))
+      );
+      
+      // Combine all successful results
+      const allSeries: TestSeries[] = [];
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value.length > 0) {
+          // Add provider name to each series for reference
+          result.value.forEach(series => {
+            allSeries.push({
+              ...series,
+              providerName: providers[index].name,
+              providerApi: providers[index].api
+            });
+          });
+        }
+      });
+      
+      setTestSeries(allSeries);
     } catch (err) {
       setError("Failed to load test series");
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [apiUrl]);
+  }, [providers]);
 
   useEffect(() => {
-    if (apiUrl) {
-      fetchSeries();
+    if (providers.length > 0) {
+      fetchAllSeries();
     }
-  }, [apiUrl, fetchSeries]);
+  }, [providers, fetchAllSeries]);
 
-  return { testSeries, loading, error, refetch: fetchSeries };
+  return { testSeries, loading, error, refetch: fetchAllSeries };
 };
 
 export const useSubjects = (apiUrl: string | null, testId: string | null) => {
