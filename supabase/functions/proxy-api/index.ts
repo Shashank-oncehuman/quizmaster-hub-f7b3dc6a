@@ -17,8 +17,8 @@ serve(async (req) => {
     if (!targetUrl) {
       console.error('Missing url parameter');
       return new Response(
-        JSON.stringify({ error: 'Missing url parameter' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Missing url parameter', data: [] }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -35,14 +35,23 @@ serve(async (req) => {
     console.log('Response status:', response.status);
     console.log('Response preview:', text.substring(0, 500));
 
+    // Check if response looks like HTML (error page)
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || text.trim().startsWith('<div')) {
+      console.warn('Received HTML instead of JSON - external API error');
+      return new Response(
+        JSON.stringify({ error: 'External API returned error page', data: [] }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     let data;
     try {
       data = JSON.parse(text);
     } catch {
       console.error('Failed to parse JSON response');
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON response from target', raw: text.substring(0, 200) }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Invalid JSON response', data: [] }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -54,8 +63,8 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Proxy error:', errorMessage);
     return new Response(
-      JSON.stringify({ error: 'Failed to fetch data', message: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Failed to fetch data', message: errorMessage, data: [] }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
