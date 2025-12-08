@@ -1,6 +1,7 @@
 // API Service for fetching data from external APIs via edge function proxy
 
 const PROXY_URL = "https://zmpnwnmowuvsndvfgjql.supabase.co/functions/v1/proxy-api";
+const DEFAULT_LOGO = "/placeholder.svg"; // Default Ocean logo
 
 export interface ApiProvider {
   name: string;
@@ -26,6 +27,7 @@ export interface Subject {
   slug: string;
   logo?: string;
   total_tests: number;
+  is_paid?: boolean;
 }
 
 export interface TestTitle {
@@ -55,6 +57,13 @@ async function proxyFetch(url: string) {
     throw new Error(`Proxy fetch failed: ${response.statusText}`);
   }
   const data = await response.json();
+  
+  // Check for proxy/server errors
+  if (data?.error) {
+    console.warn('[API Service] Server error:', data.error);
+    return { data: [], error: data.error };
+  }
+  
   console.log('[API Service] Response:', data);
   return data;
 }
@@ -79,25 +88,30 @@ class ApiService {
       const response = await proxyFetch(url);
       console.log('[API Service] Test series response:', response);
       
-      // Check for API error messages
-      if (response?.msg === "Invalid Token" || response?.status === 401) {
-        console.warn('[API Service] Invalid Token - this institution may require authentication');
+      // Check for proxy/server errors
+      if (response?.error) {
+        console.warn('[API Service] Proxy error for', apiUrl, ':', response.error);
         return [];
       }
       
-      // Handle different response formats
-      const items = Array.isArray(response) ? response : (response?.data || []);
+      // Handle different response formats - data is always in response.data
+      const items = response?.data || [];
+      
+      if (!Array.isArray(items) || items.length === 0) {
+        console.log('[API Service] No test series found for', apiUrl);
+        return [];
+      }
       
       // Map the API response to our interface
       return items.map((item: any) => ({
-        id: item.id || item.test_id || String(item.testseries_slug || Math.random()),
-        name: item.title || item.name || item.series_name || 'Unnamed Series',
+        id: item.id || String(item.testseries_slug || Math.random()),
+        name: item.title || item.name || 'Unnamed Series',
         slug: item.testseries_slug || item.slug || '',
-        logo: item.logo || item.series_logo || '',
-        is_paid: item.is_paid === 1 || item.is_paid === true,
-        total_tests: parseInt(item.totaltesttitle) || item.total_tests || item.totalTests || 0,
+        logo: item.logo || DEFAULT_LOGO,
+        is_paid: item.is_paid === 1 || item.is_paid === true || (item.price > 0 && item.freetest !== "1"),
+        total_tests: parseInt(item.totaltesttitle) || item.total_tests || 0,
         expiresOn: item.validity ? `${item.validity} months` : item.expiresOn,
-        price: item.offer_price || item.price || 0,
+        price: item.offer_price > 0 ? item.offer_price : (item.price > 0 ? item.price : 0),
       }));
     } catch (error) {
       console.error("Error fetching test series:", error);
@@ -111,14 +125,25 @@ class ApiService {
       const response = await proxyFetch(url);
       console.log('[API Service] Subjects response:', response);
       
-      const items = Array.isArray(response) ? response : (response?.data || []);
+      // Check for proxy/server errors
+      if (response?.error) {
+        console.warn('[API Service] Proxy error:', response.error);
+        return [];
+      }
+      
+      const items = response?.data || [];
+      
+      if (!Array.isArray(items)) {
+        return [];
+      }
       
       return items.map((item: any) => ({
-        id: item.id || item.subject_id || String(item.slug),
-        name: item.name || item.subject_name || 'Unnamed Subject',
+        id: item.subjectid || item.id || item.subject_id || String(Math.random()),
+        name: item.subject_name || item.name || 'Unnamed Subject',
         slug: item.slug || '',
-        logo: item.logo || item.subject_logo || '',
+        logo: item.subject_logo || item.logo || DEFAULT_LOGO,
         total_tests: item.total_tests || item.totalTests || 0,
+        is_paid: item.is_paid === 1 || item.is_paid === true,
       }));
     } catch (error) {
       console.error("Error fetching subjects:", error);
@@ -132,17 +157,27 @@ class ApiService {
       const response = await proxyFetch(url);
       console.log('[API Service] Test titles response:', response);
       
-      const items = Array.isArray(response) ? response : (response?.data || []);
+      // Check for proxy/server errors
+      if (response?.error) {
+        console.warn('[API Service] Proxy error:', response.error);
+        return [];
+      }
+      
+      const items = response?.data || [];
+      
+      if (!Array.isArray(items)) {
+        return [];
+      }
       
       return items.map((item: any) => ({
-        id: item.id || item.title_id || String(item.slug),
-        name: item.name || item.title_name || 'Unnamed Test',
+        id: item.id || item.title_id || String(Math.random()),
+        name: item.title || item.name || item.title_name || 'Unnamed Test',
         slug: item.slug || '',
-        duration: item.duration || item.duration_minutes || 30,
-        totalQuestions: item.totalQuestions || item.total_questions || 0,
-        totalMarks: item.totalMarks || item.total_marks || 0,
-        questionsUrl: item.questionsUrl || item.questions_json_url || '',
-        isPremium: item.isPremium || item.is_premium || false,
+        duration: parseInt(item.duration) || item.duration_minutes || 30,
+        totalQuestions: parseInt(item.total_questions) || item.totalQuestions || 0,
+        totalMarks: parseInt(item.total_marks) || item.totalMarks || 0,
+        questionsUrl: item.questions_json_url || item.questionsUrl || '',
+        isPremium: item.is_paid === 1 || item.isPremium || item.is_premium || false,
         attemptCount: item.attemptCount || item.remaining_attempts || 0,
       }));
     } catch (error) {

@@ -183,9 +183,9 @@ const Home = () => {
           {!seriesLoading && !seriesError && testSeries.length === 0 && providers.length > 0 && (
             <Alert className="mb-6">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>No test series available</AlertTitle>
+              <AlertTitle>Loading test series...</AlertTitle>
               <AlertDescription>
-                No public test series found. Some institutions may require authentication.
+                The external API server may be experiencing temporary issues. Please try refreshing the page or check back later.
               </AlertDescription>
             </Alert>
           )}
