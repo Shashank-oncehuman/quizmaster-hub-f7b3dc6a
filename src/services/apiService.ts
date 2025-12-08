@@ -90,14 +90,14 @@ class ApiService {
       
       // Map the API response to our interface
       return items.map((item: any) => ({
-        id: item.id || item.test_id || String(item.slug || Math.random()),
-        name: item.name || item.series_name || 'Unnamed Series',
-        slug: item.slug || '',
+        id: item.id || item.test_id || String(item.testseries_slug || Math.random()),
+        name: item.title || item.name || item.series_name || 'Unnamed Series',
+        slug: item.testseries_slug || item.slug || '',
         logo: item.logo || item.series_logo || '',
-        is_paid: item.is_paid || false,
-        total_tests: item.total_tests || item.totalTests || 0,
-        expiresOn: item.expiresOn || item.validity_days,
-        price: item.price || 0,
+        is_paid: item.is_paid === 1 || item.is_paid === true,
+        total_tests: parseInt(item.totaltesttitle) || item.total_tests || item.totalTests || 0,
+        expiresOn: item.validity ? `${item.validity} months` : item.expiresOn,
+        price: item.offer_price || item.price || 0,
       }));
     } catch (error) {
       console.error("Error fetching test series:", error);
