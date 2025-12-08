@@ -197,7 +197,7 @@ const Home = () => {
               {filteredTestSeries.map((series, index) => (
                 <Card
                   key={`${series.id}-${series.providerApi}-${index}`}
-                  className="hover:shadow-lg transition-smooth cursor-pointer group"
+                  className="hover:shadow-lg transition-smooth cursor-pointer group overflow-hidden"
                   onClick={() => {
                     if (series.providerApi) {
                       localStorage.setItem("selectedApiUrl", series.providerApi);
@@ -205,20 +205,22 @@ const Home = () => {
                     navigate(`/test-series/${series.id}`);
                   }}
                 >
-                  <CardHeader>
-                    <div className="flex items-start justify-between mb-3">
-                      {series.logo && (
-                        <img
-                          src={series.logo}
-                          alt={series.name}
-                          className="h-12 w-12 object-contain rounded"
-                        />
-                      )}
-                      <Badge variant={series.is_paid ? "default" : "secondary"}>
-                        {series.is_paid ? `₹${series.price}` : "Free"}
-                      </Badge>
-                    </div>
-                    <CardTitle className="group-hover:text-primary transition-smooth">
+                  {/* Full-size logo as card background */}
+                  <div className="relative h-40 w-full bg-gradient-to-br from-primary/10 to-accent/10">
+                    <img
+                      src="/logo.png"
+                      alt="Study Ocean"
+                      className="w-full h-full object-contain p-4"
+                    />
+                    <Badge 
+                      variant={series.is_paid ? "default" : "secondary"}
+                      className="absolute top-3 right-3"
+                    >
+                      {series.is_paid ? `₹${series.price}` : "Free"}
+                    </Badge>
+                  </div>
+                  <CardHeader className="pt-4">
+                    <CardTitle className="group-hover:text-primary transition-smooth text-lg">
                       {series.name}
                     </CardTitle>
                     <CardDescription>
