@@ -18,6 +18,7 @@ import { useApiProviders, useAllTestSeries } from "@/hooks/useApiData";
 import { TestSeriesSkeleton } from "@/components/TestSeriesSkeleton";
 import { ApiErrorState, EmptyState } from "@/components/ApiErrorState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import studyOceanLogo from "@/assets/study-ocean-logo.jpg";
 
 const Home = () => {
   const [user, setUser] = useState<any>(null);
@@ -197,7 +198,8 @@ const Home = () => {
               {filteredTestSeries.map((series, index) => (
                 <Card
                   key={`${series.id}-${series.providerApi}-${index}`}
-                  className="hover:shadow-lg transition-smooth cursor-pointer group overflow-hidden"
+                  className="hover:shadow-xl transition-all duration-300 ease-out cursor-pointer group overflow-hidden animate-fade-in hover:-translate-y-1"
+                  style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
                   onClick={() => {
                     if (series.providerApi) {
                       localStorage.setItem("selectedApiUrl", series.providerApi);
@@ -206,30 +208,34 @@ const Home = () => {
                   }}
                 >
                   {/* Full-size logo as card background */}
-                  <div className="relative h-40 w-full bg-gradient-to-br from-primary/10 to-accent/10">
+                  <div className="relative h-40 w-full bg-gradient-to-br from-primary/10 to-accent/10 overflow-hidden">
                     <img
-                      src="/logo.png"
-                      alt="Study Ocean"
-                      className="w-full h-full object-contain p-4"
+                      src={series.logo || studyOceanLogo}
+                      alt={series.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = studyOceanLogo;
+                      }}
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <Badge 
                       variant={series.is_paid ? "default" : "secondary"}
-                      className="absolute top-3 right-3"
+                      className="absolute top-3 right-3 transition-transform duration-300 group-hover:scale-105"
                     >
                       {series.is_paid ? `₹${series.price}` : "Free"}
                     </Badge>
                   </div>
                   <CardHeader className="pt-4">
-                    <CardTitle className="group-hover:text-primary transition-smooth text-lg">
+                    <CardTitle className="group-hover:text-primary transition-colors duration-300 text-lg line-clamp-2">
                       {series.name}
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="transition-colors duration-300">
                       {series.providerName && <span className="text-primary">{series.providerName} • </span>}
                       {series.total_tests} tests {series.expiresOn && `• ${series.expiresOn}`}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button className="w-full" variant="outline">
+                    <Button className="w-full transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground" variant="outline">
                       View Details
                     </Button>
                   </CardContent>

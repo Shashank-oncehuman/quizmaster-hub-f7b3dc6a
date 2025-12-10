@@ -1,6 +1,38 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiService, ApiProvider, TestSeries, Subject, TestTitle } from "@/services/apiService";
 
+// Batch requests with concurrency limit to prevent edge function overload
+async function batchRequests<T>(
+  items: ApiProvider[],
+  fetchFn: (item: ApiProvider) => Promise<T[]>,
+  concurrency = 5
+): Promise<{ provider: ApiProvider; data: T[] }[]> {
+  const results: { provider: ApiProvider; data: T[] }[] = [];
+  
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    const batchResults = await Promise.allSettled(
+      batch.map(async (item) => {
+        const data = await fetchFn(item);
+        return { provider: item, data };
+      })
+    );
+    
+    batchResults.forEach((result) => {
+      if (result.status === 'fulfilled') {
+        results.push(result.value);
+      }
+    });
+    
+    // Small delay between batches to prevent overload
+    if (i + concurrency < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+  }
+  
+  return results;
+}
+
 export const useApiProviders = () => {
   const [providers, setProviders] = useState<ApiProvider[]>([]);
   const [loading, setLoading] = useState(true);
@@ -11,7 +43,8 @@ export const useApiProviders = () => {
     setError(null);
     try {
       const data = await apiService.fetchApiProviders();
-      setProviders(data);
+      // Limit to first 20 providers to reduce load
+      setProviders(data.slice(0, 20));
     } catch (err) {
       setError("Failed to load API providers");
       console.error(err);
@@ -38,21 +71,22 @@ export const useAllTestSeries = (providers: ApiProvider[]) => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch from all providers in parallel
-      const results = await Promise.allSettled(
-        providers.map(provider => apiService.fetchTestSeries(provider.api))
+      // Use batched requests with concurrency limit
+      const results = await batchRequests(
+        providers,
+        (provider) => apiService.fetchTestSeries(provider.api),
+        5 // Process 5 providers at a time
       );
       
       // Combine all successful results
       const allSeries: TestSeries[] = [];
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled' && result.value.length > 0) {
-          // Add provider name to each series for reference
-          result.value.forEach(series => {
+      results.forEach(({ provider, data }) => {
+        if (data.length > 0) {
+          data.forEach(series => {
             allSeries.push({
               ...series,
-              providerName: providers[index].name,
-              providerApi: providers[index].api
+              providerName: provider.name,
+              providerApi: provider.api
             });
           });
         }
