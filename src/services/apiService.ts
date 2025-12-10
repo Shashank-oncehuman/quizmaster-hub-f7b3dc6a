@@ -1,7 +1,8 @@
 // API Service for fetching data from external APIs via edge function proxy
 
 const PROXY_URL = "https://zmpnwnmowuvsndvfgjql.supabase.co/functions/v1/proxy-api";
-const DEFAULT_LOGO = "/logo.png"; // Default Study Ocean logo
+import studyOceanLogo from "@/assets/study-ocean-logo.jpg";
+const DEFAULT_LOGO = studyOceanLogo;
 
 export interface ApiProvider {
   name: string;
@@ -185,21 +186,22 @@ class ApiService {
         return [];
       }
       
-      const items = response?.data || [];
+      // API returns test_titles array, not data
+      const items = response?.test_titles || response?.data || [];
       
       if (!Array.isArray(items)) {
         return [];
       }
       
       return items.map((item: any) => ({
-        id: item.titleid || item.id || item.title_id || String(Math.random()),
-        name: item.test_title || item.title || item.name || item.title_name || 'Unnamed Test',
+        id: item.id || item.titleid || item.title_id || String(Math.random()),
+        name: item.title || item.test_title || item.name || item.title_name || 'Unnamed Test',
         slug: item.slug || '',
-        duration: parseInt(item.test_duration) || parseInt(item.duration) || item.duration_minutes || 30,
-        totalQuestions: parseInt(item.totalquestions) || parseInt(item.total_questions) || item.totalQuestions || 0,
-        totalMarks: parseInt(item.totalmarks) || parseInt(item.total_marks) || item.totalMarks || 0,
-        questionsUrl: item.questions_json_url || item.questionsUrl || '',
-        isPremium: item.is_paid === 1 || item.is_paid === "1" || item.isPremium || item.is_premium || false,
+        duration: parseInt(item.time) || parseInt(item.test_duration) || parseInt(item.duration) || 30,
+        totalQuestions: parseInt(item.questions) || parseInt(item.totalquestions) || parseInt(item.total_questions) || 0,
+        totalMarks: parseInt(item.marks) || parseInt(item.totalmarks) || parseInt(item.total_marks) || 0,
+        questionsUrl: item.test_questions_url || item.questions_json_url || item.questionsUrl || '',
+        isPremium: item.free_flag === "0" || item.free_flag === 0 || item.is_paid === 1 || item.is_paid === "1" || false,
         attemptCount: item.attemptCount || item.remaining_attempts || 0,
       }));
     } catch (error) {
