@@ -50,22 +50,44 @@ export interface QuizQuestion {
   solution?: string;
 }
 
-async function proxyFetch(url: string) {
+async function proxyFetch(url: string, retries = 2): Promise<any> {
   console.log('[API Service] Fetching:', url);
-  const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(url)}`);
-  if (!response.ok) {
-    throw new Error(`Proxy fetch failed: ${response.statusText}`);
-  }
-  const data = await response.json();
   
-  // Check for proxy/server errors
-  if (data?.error) {
-    console.warn('[API Service] Server error:', data.error);
-    return { data: [], error: data.error };
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(url)}`);
+      
+      // Handle non-OK responses gracefully (including 503 BOOT_ERROR)
+      if (!response.ok) {
+        console.warn(`[API Service] Response not OK (${response.status}), attempt ${attempt + 1}`);
+        if (attempt < retries) {
+          await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+          continue;
+        }
+        return { data: [], error: `HTTP ${response.status}` };
+      }
+      
+      const data = await response.json();
+      
+      // Check for proxy/server errors
+      if (data?.error) {
+        console.warn('[API Service] Server error:', data.error);
+        return { data: [], error: data.error };
+      }
+      
+      console.log('[API Service] Response received');
+      return data;
+    } catch (error) {
+      console.warn(`[API Service] Fetch error, attempt ${attempt + 1}:`, error);
+      if (attempt < retries) {
+        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+        continue;
+      }
+      return { data: [], error: 'Network error' };
+    }
   }
   
-  console.log('[API Service] Response:', data);
-  return data;
+  return { data: [], error: 'Max retries exceeded' };
 }
 
 class ApiService {
