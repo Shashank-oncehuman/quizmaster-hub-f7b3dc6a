@@ -13,11 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BookOpen, Users, Award, Search, AlertCircle } from "lucide-react";
+import { BookOpen, Users, Award, Search } from "lucide-react";
 import { useApiProviders, useAllTestSeries } from "@/hooks/useApiData";
 import { TestSeriesSkeleton } from "@/components/TestSeriesSkeleton";
 import { ApiErrorState, EmptyState } from "@/components/ApiErrorState";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { LoadingProgress } from "@/components/LoadingProgress";
 import studyOceanLogo from "@/assets/study-ocean-logo.jpg";
 
 const Home = () => {
@@ -28,7 +28,7 @@ const Home = () => {
   const navigate = useNavigate();
 
   const { providers, loading: providersLoading, error: providersError, refetch: refetchProviders } = useApiProviders();
-  const { testSeries, loading: seriesLoading, error: seriesError, refetch: refetchSeries } = useAllTestSeries(providers);
+  const { testSeries, loading: seriesLoading, progress, error: seriesError, refetch: refetchSeries } = useAllTestSeries(providers);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -76,6 +76,8 @@ const Home = () => {
       }
     });
 
+  const isLoading = providersLoading || seriesLoading;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -83,40 +85,32 @@ const Home = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary/10 via-background to-accent/10 py-20">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent animate-fade-in">
             Welcome to Study Ocean
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '100ms' }}>
             Master your subjects with our comprehensive test series. Practice, compete, and excel!
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mt-12">
-            <Card className="border-primary/20">
-              <CardContent className="pt-6 text-center">
-                <div className="p-3 bg-primary/10 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
-                  <BookOpen className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">100+ Test Series</h3>
-                <p className="text-sm text-muted-foreground">Comprehensive coverage</p>
-              </CardContent>
-            </Card>
-            <Card className="border-primary/20">
-              <CardContent className="pt-6 text-center">
-                <div className="p-3 bg-primary/10 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">Global Competition</h3>
-                <p className="text-sm text-muted-foreground">Compete with learners</p>
-              </CardContent>
-            </Card>
-            <Card className="border-primary/20">
-              <CardContent className="pt-6 text-center">
-                <div className="p-3 bg-primary/10 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
-                  <Award className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">Track Progress</h3>
-                <p className="text-sm text-muted-foreground">Analytics & achievements</p>
-              </CardContent>
-            </Card>
+            {[
+              { icon: BookOpen, title: "100+ Test Series", desc: "Comprehensive coverage" },
+              { icon: Users, title: "Global Competition", desc: "Compete with learners" },
+              { icon: Award, title: "Track Progress", desc: "Analytics & achievements" }
+            ].map((item, idx) => (
+              <Card 
+                key={idx} 
+                className="border-primary/20 animate-fade-in transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                style={{ animationDelay: `${(idx + 2) * 100}ms` }}
+              >
+                <CardContent className="pt-6 text-center">
+                  <div className="p-3 bg-primary/10 rounded-full w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                    <item.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.desc}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -128,7 +122,10 @@ const Home = () => {
             <div>
               <h2 className="text-3xl font-bold mb-2">Available Test Series</h2>
               <p className="text-muted-foreground">
-                {providersLoading ? "Loading institutions..." : `Browse ${providers.length} institutions`}
+                {isLoading 
+                  ? `Loading from ${providers.length} institutions...` 
+                  : `Found ${testSeries.length} test series from ${providers.length} institutions`
+                }
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
@@ -181,18 +178,11 @@ const Home = () => {
             />
           )}
 
-          {!seriesLoading && !seriesError && testSeries.length === 0 && providers.length > 0 && (
-            <Alert className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Loading test series...</AlertTitle>
-              <AlertDescription>
-                The external API server may be experiencing temporary issues. Please try refreshing the page or check back later.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {(seriesLoading || providersLoading) ? (
-            <TestSeriesSkeleton />
+          {isLoading ? (
+            <LoadingProgress 
+              progress={progress} 
+              message={providersLoading ? "Fetching institutions..." : "Loading test series..."} 
+            />
           ) : filteredTestSeries.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTestSeries.map((series, index) => (
@@ -207,17 +197,14 @@ const Home = () => {
                     navigate(`/test-series/${series.id}`);
                   }}
                 >
-                  {/* Full-size logo as card background */}
+                  {/* Full-size logo as card background - only for institution cards */}
                   <div className="relative h-40 w-full bg-gradient-to-br from-primary/10 to-accent/10 overflow-hidden">
                     <img
-                      src={series.logo || studyOceanLogo}
+                      src={studyOceanLogo}
                       alt={series.name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = studyOceanLogo;
-                      }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
                     <Badge 
                       variant={series.is_paid ? "default" : "secondary"}
                       className="absolute top-3 right-3 transition-transform duration-300 group-hover:scale-105"
@@ -230,7 +217,8 @@ const Home = () => {
                       {series.name}
                     </CardTitle>
                     <CardDescription className="transition-colors duration-300">
-                      {series.providerName && <span className="text-primary">{series.providerName} • </span>}
+                      {series.providerName && <span className="text-primary font-medium">{series.providerName}</span>}
+                      {series.providerName && " • "}
                       {series.total_tests} tests {series.expiresOn && `• ${series.expiresOn}`}
                     </CardDescription>
                   </CardHeader>
@@ -242,7 +230,7 @@ const Home = () => {
                 </Card>
               ))}
             </div>
-          ) : !seriesLoading && !seriesError ? (
+          ) : !isLoading && !seriesError ? (
             <EmptyState message="No test series found matching your filters." />
           ) : null}
         </section>

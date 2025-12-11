@@ -210,20 +210,16 @@ class ApiService {
     }
   }
 
-  async fetchQuizQuestions(questionsJsonUrl: string): Promise<QuizQuestion[]> {
+  async fetchQuizQuestions(questionsJsonUrl: string): Promise<any[]> {
     try {
       const data = await proxyFetch(questionsJsonUrl);
       console.log('[API Service] Quiz questions response:', data);
       
+      // API returns array directly or nested in data/questions
       const items = Array.isArray(data) ? data : (data?.data || data?.questions || []);
       
-      return items.map((item: any) => ({
-        qid: item.qid || item.question_id || String(Math.random()),
-        question: item.question || item.question_text || '',
-        options: item.options || [],
-        answer: item.answer || item.correct_answer || '',
-        solution: item.solution || item.explanation || '',
-      }));
+      // Return raw items - let Quiz component handle transformation
+      return items;
     } catch (error) {
       console.error("Error fetching quiz questions:", error);
       return [];

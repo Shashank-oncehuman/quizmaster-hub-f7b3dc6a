@@ -5,9 +5,12 @@ import { apiService, ApiProvider, TestSeries, Subject, TestTitle } from "@/servi
 async function batchRequests<T>(
   items: ApiProvider[],
   fetchFn: (item: ApiProvider) => Promise<T[]>,
-  concurrency = 5
+  concurrency = 5,
+  onProgress?: (progress: number) => void
 ): Promise<{ provider: ApiProvider; data: T[] }[]> {
   const results: { provider: ApiProvider; data: T[] }[] = [];
+  const total = items.length;
+  let completed = 0;
   
   for (let i = 0; i < items.length; i += concurrency) {
     const batch = items.slice(i, i + concurrency);
@@ -19,10 +22,16 @@ async function batchRequests<T>(
     );
     
     batchResults.forEach((result) => {
+      completed++;
       if (result.status === 'fulfilled') {
         results.push(result.value);
       }
     });
+    
+    // Report progress
+    if (onProgress) {
+      onProgress((completed / total) * 100);
+    }
     
     // Small delay between batches to prevent overload
     if (i + concurrency < items.length) {
@@ -63,19 +72,22 @@ export const useApiProviders = () => {
 export const useAllTestSeries = (providers: ApiProvider[]) => {
   const [testSeries, setTestSeries] = useState<TestSeries[]>([]);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAllSeries = useCallback(async () => {
     if (providers.length === 0) return;
     
     setLoading(true);
+    setProgress(0);
     setError(null);
     try {
-      // Use batched requests with concurrency limit
+      // Use batched requests with concurrency limit and progress tracking
       const results = await batchRequests(
         providers,
         (provider) => apiService.fetchTestSeries(provider.api),
-        5 // Process 5 providers at a time
+        5, // Process 5 providers at a time
+        setProgress
       );
       
       // Combine all successful results
@@ -98,6 +110,7 @@ export const useAllTestSeries = (providers: ApiProvider[]) => {
       console.error(err);
     } finally {
       setLoading(false);
+      setProgress(100);
     }
   }, [providers]);
 
@@ -107,7 +120,7 @@ export const useAllTestSeries = (providers: ApiProvider[]) => {
     }
   }, [providers, fetchAllSeries]);
 
-  return { testSeries, loading, error, refetch: fetchAllSeries };
+  return { testSeries, loading, progress, error, refetch: fetchAllSeries };
 };
 
 export const useSubjects = (apiUrl: string | null, testId: string | null) => {
