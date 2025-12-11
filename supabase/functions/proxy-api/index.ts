@@ -5,6 +5,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Allowlist of domains that can be proxied
+const ALLOWED_DOMAINS = [
+  'studyuk.site',
+  'classx.co.in',
+  'testseries-assets.classx.co.in',
+  'appx.co.in',
+  'akamai.net.in'
+];
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -19,6 +28,32 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Missing url parameter', data: [] }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate URL format
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(targetUrl);
+    } catch {
+      console.error('Invalid URL format:', targetUrl);
+      return new Response(
+        JSON.stringify({ error: 'Invalid URL format', data: [] }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if the domain is in the allowlist (SSRF protection)
+    const targetHost = parsedUrl.hostname.toLowerCase();
+    const isAllowed = ALLOWED_DOMAINS.some(domain => 
+      targetHost === domain || targetHost.endsWith('.' + domain)
+    );
+
+    if (!isAllowed) {
+      console.error('Domain not allowed:', targetHost);
+      return new Response(
+        JSON.stringify({ error: 'Domain not allowed', data: [] }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

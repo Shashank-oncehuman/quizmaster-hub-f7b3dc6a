@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -221,7 +222,7 @@ const Quiz = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Render HTML content safely
+  // Render HTML content safely with DOMPurify sanitization
   const renderHtmlContent = (html: string) => {
     // Clean up the HTML - remove wrapper tags if present
     let cleanHtml = html;
@@ -231,7 +232,12 @@ const Quiz = () => {
         cleanHtml = bodyMatch[1];
       }
     }
-    return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
+    // Sanitize HTML to prevent XSS attacks
+    const sanitizedHtml = DOMPurify.sanitize(cleanHtml, {
+      ALLOWED_TAGS: ['p', 'b', 'i', 'em', 'strong', 'img', 'br', 'sup', 'sub', 'span', 'div', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'thead', 'tbody'],
+      ALLOWED_ATTR: ['src', 'alt', 'class', 'style', 'width', 'height']
+    });
+    return <div dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />;
   };
 
   if (loading) {
