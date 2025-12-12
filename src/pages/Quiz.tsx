@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Clock, ChevronLeft, ChevronRight, Flag } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Flag, Grid3X3, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { LoadingProgress } from "@/components/LoadingProgress";
@@ -34,6 +34,7 @@ const Quiz = () => {
   const [quizAttemptId, setQuizAttemptId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showNavigator, setShowNavigator] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -291,10 +292,20 @@ const Quiz = () => {
                   {formatTime(timeLeft)}
                 </Badge>
               </div>
-              <Button variant="outline" size="sm">
-                <Flag className="h-4 w-4 mr-2" />
-                Mark for Review
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowNavigator(!showNavigator)}
+                  className="md:hidden"
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Flag className="h-4 w-4 mr-2" />
+                  Mark for Review
+                </Button>
+              </div>
             </div>
             <Progress value={progress} className="mt-4 transition-all duration-500" />
           </CardHeader>
@@ -349,31 +360,41 @@ const Quiz = () => {
             Previous
           </Button>
 
-          {currentQuestionIndex === questions.length - 1 ? (
+          <div className="flex items-center gap-2">
             <Button 
+              variant="destructive"
               onClick={handleSubmit} 
               disabled={submitting} 
               className="shadow-lg transition-all duration-200 hover:shadow-xl"
             >
-              {submitting ? "Submitting..." : "Submit Quiz"}
+              <Send className="h-4 w-4 mr-2" />
+              {submitting ? "Submitting..." : "Submit"}
             </Button>
-          ) : (
-            <Button
-              onClick={() =>
-                setCurrentQuestionIndex((prev) => Math.min(questions.length - 1, prev + 1))
-              }
-              className="transition-all duration-200"
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          )}
+            
+            {currentQuestionIndex < questions.length - 1 && (
+              <Button
+                onClick={() =>
+                  setCurrentQuestionIndex((prev) => Math.min(questions.length - 1, prev + 1))
+                }
+                className="transition-all duration-200"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* Question Grid */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Question Navigator</CardTitle>
+        {/* Question Grid - Toggle on mobile, always visible on desktop */}
+        <Card className={`mt-6 ${showNavigator ? 'block' : 'hidden'} md:block`}>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Grid3X3 className="h-5 w-5" />
+              Question Navigator
+            </CardTitle>
+            <div className="text-sm text-muted-foreground">
+              {Object.keys(answers).length}/{questions.length} answered
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
@@ -385,7 +406,10 @@ const Quiz = () => {
                   className={`transition-all duration-200 ${
                     answers[q.id] ? "border-green-500 bg-green-500/10" : ""
                   }`}
-                  onClick={() => setCurrentQuestionIndex(index)}
+                  onClick={() => {
+                    setCurrentQuestionIndex(index);
+                    setShowNavigator(false);
+                  }}
                 >
                   {index + 1}
                 </Button>
